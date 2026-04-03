@@ -562,6 +562,43 @@ export async function listSuppliers(): Promise<Supplier[]> {
   return [...mockSuppliers]
 }
 
+export async function createSupplier(input: {
+  code: string
+  name: string
+  contact?: string
+}): Promise<Supplier> {
+  const code = input.code.trim()
+  const name = input.name.trim()
+  if (!code || !name) {
+    throw new Error('Supplier code and name are required.')
+  }
+  const row: Supplier = {
+    id: crypto.randomUUID(),
+    code,
+    name,
+    contact: input.contact?.trim() || null,
+    created_at: new Date().toISOString(),
+  }
+  if (supabase && isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .insert({
+        code: row.code,
+        name: row.name,
+        contact: row.contact,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data as Supplier
+  }
+  if (mockSuppliers.some((s) => s.code.toLowerCase() === code.toLowerCase())) {
+    throw new Error('A supplier with this code already exists.')
+  }
+  mockSuppliers = [...mockSuppliers, row]
+  return row
+}
+
 export async function listInventoryItems(): Promise<InventoryItem[]> {
   if (supabase && isSupabaseConfigured) {
     const { data, error } = await supabase
@@ -700,6 +737,92 @@ export async function advanceBudgetStatus(
     x.id === id ? { ...x, status: next } : x,
   )
   return { ...p, status: next }
+}
+
+export async function createBudgetPeriod(input: {
+  code: string
+  label: string
+  fiscal_year: number
+  period_start: string
+  period_end: string
+}): Promise<BudgetPeriod> {
+  const code = input.code.trim()
+  const label = input.label.trim()
+  if (!code || !label) throw new Error('Budget code and label are required.')
+  const fy = Math.round(Number(input.fiscal_year))
+  if (!Number.isFinite(fy) || fy < 1900 || fy > 2200) {
+    throw new Error('Enter a valid fiscal year.')
+  }
+  const row: BudgetPeriod = {
+    id: crypto.randomUUID(),
+    code,
+    label,
+    fiscal_year: fy,
+    period_start: input.period_start.slice(0, 10),
+    period_end: input.period_end.slice(0, 10),
+    status: 'draft',
+    created_at: new Date().toISOString(),
+  }
+  if (supabase && isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('budget_periods')
+      .insert({
+        code: row.code,
+        label: row.label,
+        fiscal_year: row.fiscal_year,
+        period_start: row.period_start,
+        period_end: row.period_end,
+        status: 'draft',
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data as BudgetPeriod
+  }
+  if (mockBudgetPeriods.some((x) => x.code.toLowerCase() === code.toLowerCase())) {
+    throw new Error('A budget period with this code already exists.')
+  }
+  mockBudgetPeriods = [...mockBudgetPeriods, row]
+  return row
+}
+
+export async function createBudgetLine(input: {
+  budget_period_id: string
+  coa_code: string
+  target_amount: number
+  notes?: string
+}): Promise<BudgetLine> {
+  const coa = input.coa_code.trim()
+  if (!coa) throw new Error('Account code (COA) is required.')
+  const periods = await listBudgetPeriods()
+  const p = periods.find((x) => x.id === input.budget_period_id)
+  if (!p) throw new Error('Budget period not found.')
+  if (p.status !== 'draft') {
+    throw new Error('Lines can only be added while the budget is in draft.')
+  }
+  const row: BudgetLine = {
+    id: crypto.randomUUID(),
+    budget_period_id: input.budget_period_id,
+    coa_code: coa,
+    target_amount: Math.round(Number(input.target_amount) * 100) / 100,
+    notes: input.notes?.trim() || null,
+  }
+  if (supabase && isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('budget_lines')
+      .insert({
+        budget_period_id: row.budget_period_id,
+        coa_code: row.coa_code,
+        target_amount: row.target_amount,
+        notes: row.notes,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data as BudgetLine
+  }
+  mockBudgetLines = [...mockBudgetLines, row]
+  return row
 }
 
 export async function listMembersLite(): Promise<Member[]> {

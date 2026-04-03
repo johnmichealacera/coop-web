@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   createStockMovement,
+  createSupplier,
   listInventoryItems,
   listSuppliers,
 } from '@/lib/modules-api'
@@ -44,7 +45,11 @@ export function OperationsPage() {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [openSupplier, setOpenSupplier] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [supCode, setSupCode] = useState('')
+  const [supName, setSupName] = useState('')
+  const [supContact, setSupContact] = useState('')
   const [itemId, setItemId] = useState('')
   const [movType, setMovType] = useState<'in' | 'out' | 'transfer'>('in')
   const [qty, setQty] = useState('10')
@@ -75,6 +80,24 @@ export function OperationsPage() {
     if (items.length && !itemId) setItemId(items[0].id)
   }, [items, itemId])
 
+  async function onSaveSupplier() {
+    setErr(null)
+    try {
+      await createSupplier({
+        code: supCode,
+        name: supName,
+        contact: supContact || undefined,
+      })
+      setOpenSupplier(false)
+      setSupCode('')
+      setSupName('')
+      setSupContact('')
+      await load()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not add supplier')
+    }
+  }
+
   async function onMove() {
     setErr(null)
     try {
@@ -99,8 +122,7 @@ export function OperationsPage() {
           POS & inventory
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Suppliers, SKU on-hand, and stock movements (receipt / issue /
-          transfer flag).
+          Suppliers, item balances, and stock received, issued, or transferred.
         </p>
       </div>
 
@@ -112,29 +134,92 @@ export function OperationsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Suppliers</CardTitle>
-            <CardDescription>Vendor master (read-only MVP).</CardDescription>
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+            <div>
+              <CardTitle>Suppliers</CardTitle>
+              <CardDescription>
+                Supplier codes, names, and contacts for purchasing and receiving.
+              </CardDescription>
+            </div>
+            <Dialog open={openSupplier} onOpenChange={setOpenSupplier}>
+              <DialogTrigger
+                render={
+                  <Button type="button" size="sm">
+                    Add supplier
+                  </Button>
+                }
+              />
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add supplier</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-3 py-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="sup-code">Code</Label>
+                    <Input
+                      id="sup-code"
+                      autoComplete="off"
+                      placeholder="e.g. SUP-02"
+                      value={supCode}
+                      onChange={(e) => setSupCode(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="sup-name">Name</Label>
+                    <Input
+                      id="sup-name"
+                      value={supName}
+                      onChange={(e) => setSupName(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="sup-contact">Contact (optional)</Label>
+                    <Input
+                      id="sup-contact"
+                      placeholder="Phone or email"
+                      value={supContact}
+                      onChange={(e) => setSupContact(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setOpenSupplier(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={() => void onSaveSupplier()}>Save</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {suppliers.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-mono text-xs">{s.code}</TableCell>
-                    <TableCell>{s.name}</TableCell>
-                    <TableCell className="text-xs">{s.contact ?? '—'}</TableCell>
+            {suppliers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No suppliers yet. Click Add supplier to register vendors you buy
+                from.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {suppliers.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-mono text-xs">{s.code}</TableCell>
+                      <TableCell>{s.name}</TableCell>
+                      <TableCell className="text-xs">{s.contact ?? '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
@@ -142,7 +227,9 @@ export function OperationsPage() {
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
             <div>
               <CardTitle>Inventory</CardTitle>
-              <CardDescription>On-hand by SKU.</CardDescription>
+              <CardDescription>
+                Quantity on hand and reorder level by item.
+              </CardDescription>
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger
@@ -151,13 +238,13 @@ export function OperationsPage() {
                     type="button"
                     className="inline-flex h-8 items-center justify-center rounded-lg border border-transparent bg-primary px-2.5 text-sm font-medium text-primary-foreground"
                   >
-                    Stock movement
+                    Record movement
                   </button>
                 }
               />
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Receive / issue stock</DialogTitle>
+                  <DialogTitle>Record stock movement</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-3 py-2">
                   <div className="grid gap-2">

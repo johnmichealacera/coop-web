@@ -163,7 +163,7 @@ export function AccountingPage() {
         <CardHeader>
           <CardTitle>Chart of accounts</CardTitle>
           <CardDescription>
-            Sample accounts — extend in Supabase or seed for your co-op.
+            Account codes and types used for journal entries and reporting.
           </CardDescription>
         </CardHeader>
         <CardContent>

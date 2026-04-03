@@ -88,7 +88,7 @@ let mockPatronage: PatronageAllocation[] = [
     dividend: 1500,
     patronage: 800,
     gross_dpr: 2300,
-    explanation: 'MVP sample allocation',
+    explanation: 'Illustrative allocation for reporting review.',
   },
 ]
 
@@ -272,6 +272,84 @@ export async function listPatronage(): Promise<
     ...p,
     member: mockMembers.find((m) => m.id === p.member_id),
   }))
+}
+
+export type CreatePatronageAllocationInput = {
+  member_id: string
+  period_from: string
+  period_to: string
+  share_capital?: number
+  avg_share_capital?: number
+  int_paid?: number
+  dividend?: number
+  patronage?: number
+  gross_dpr?: number
+  explanation?: string
+}
+
+export async function createPatronageAllocation(
+  input: CreatePatronageAllocationInput,
+): Promise<PatronageAllocation & { member?: Member }> {
+  if (!input.member_id?.trim()) {
+    throw new Error('Member is required.')
+  }
+  const pf = input.period_from?.trim().slice(0, 10)
+  const pt = input.period_to?.trim().slice(0, 10)
+  if (!pf || !pt) {
+    throw new Error('Period start and end dates are required.')
+  }
+
+  const num = (v: number | undefined) =>
+    v === undefined || v === null || Number.isNaN(Number(v))
+      ? 0
+      : Number(v)
+
+  const row: PatronageAllocation = {
+    id: crypto.randomUUID(),
+    member_id: input.member_id,
+    period_from: pf,
+    period_to: pt,
+    share_capital: num(input.share_capital),
+    avg_share_capital: num(input.avg_share_capital),
+    int_paid: num(input.int_paid),
+    dividend: num(input.dividend),
+    patronage: num(input.patronage),
+    gross_dpr: num(input.gross_dpr),
+    explanation: input.explanation?.trim() || null,
+  }
+
+  if (supabase && isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('patronage_allocations')
+      .insert({
+        member_id: row.member_id,
+        period_from: row.period_from,
+        period_to: row.period_to,
+        share_capital: row.share_capital,
+        avg_share_capital: row.avg_share_capital,
+        int_paid: row.int_paid,
+        dividend: row.dividend,
+        patronage: row.patronage,
+        gross_dpr: row.gross_dpr,
+        explanation: row.explanation,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    const saved = data as PatronageAllocation
+    const { data: mem } = await supabase
+      .from('members')
+      .select('*')
+      .eq('id', saved.member_id)
+      .single()
+    return { ...saved, member: mem as Member }
+  }
+
+  mockPatronage = [...mockPatronage, row]
+  return {
+    ...row,
+    member: mockMembers.find((m) => m.id === row.member_id),
+  }
 }
 
 export async function listBranches(): Promise<Branch[]> {

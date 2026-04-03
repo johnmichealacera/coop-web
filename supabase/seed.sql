@@ -74,7 +74,7 @@ select
   1500,
   800,
   2300,
-  'Sample patronage row for MVP demo'
+  'Illustrative allocation for reporting review.'
 from public.members m
 join public.branches b on b.id = m.branch_id
 where b.code = 1 and m.client_id = '100001'

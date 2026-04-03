@@ -107,12 +107,15 @@ export function AppShell() {
         <Separator />
         <div className="p-3">
           <Badge variant={mode === 'supabase' ? 'default' : 'secondary'}>
-            {mode === 'supabase' ? 'Supabase live' : 'Local demo data'}
+            {mode === 'supabase' ? 'Live database' : 'Local demo data'}
           </Badge>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Add <code className="rounded bg-muted px-1">.env</code> to connect
-            your project.
-          </p>
+          {mode === 'demo' && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Set <code className="rounded bg-muted px-1">.env</code> with{' '}
+              <code className="rounded bg-muted px-1">VITE_SUPABASE_*</code> to
+              use your project.
+            </p>
+          )}
         </div>
       </aside>
 
