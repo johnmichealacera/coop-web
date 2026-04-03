@@ -7,10 +7,25 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies & build
 node_modules
 dist
 dist-ssr
+*.tsbuildinfo
+
+# Environment & secrets (keep .env.example committed as a template)
+.env
+.env.*
+!.env.example
+
+# Vite / tooling
 *.local
+
+# Vercel CLI local project link
+.vercel
+
+# Test / coverage
+coverage
 
 # Editor directories and files
 .vscode/*
