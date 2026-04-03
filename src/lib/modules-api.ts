@@ -34,7 +34,7 @@ let mockLoans: LoanApplication[] = [
     deductions_total: 2500,
     net_proceeds: 47500,
     status: 'verified',
-    notes: 'Demo loan application',
+    notes: 'Loan application',
     created_at: new Date().toISOString(),
   },
 ]

@@ -2,7 +2,7 @@
 -- Safe to run multiple times: uses ON CONFLICT / WHERE NOT EXISTS where needed.
 
 insert into public.members (branch_id, client_id, full_name, date_opened)
-select b.id, '100001', 'Sample Member', '2020-01-15'::date
+select b.id, '100001', 'Rosa Dela Cruz', '2020-01-15'::date
 from public.branches b
 where b.code = 1
 limit 1
@@ -82,7 +82,7 @@ where b.code = 1 and m.client_id = '100001'
     select 1 from public.patronage_allocations p where p.member_id = m.id
   );
 
--- Chart of accounts (for journal / batch posting demos)
+-- Chart of accounts (for journal / batch posting)
 insert into public.chart_of_accounts (code, name, account_type) values
   ('1010', 'Cash on hand', 'asset'),
   ('2101', 'Members savings deposit', 'liability'),

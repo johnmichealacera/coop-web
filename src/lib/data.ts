@@ -361,7 +361,7 @@ export async function listBranches(): Promise<Branch[]> {
     if (error) throw error
     return data as Branch[]
   }
-  return [{ id: DEMO_BRANCH_ID, code: 1, name: 'Main Office (demo)' }]
+  return [{ id: DEMO_BRANCH_ID, code: 1, name: 'Main Office' }]
 }
 
 export type UpsertAssessmentInput = Omit<
@@ -439,6 +439,6 @@ export async function upsertAssessment(
   return row
 }
 
-export function getConnectionMode(): 'supabase' | 'demo' {
-  return isSupabaseConfigured ? 'supabase' : 'demo'
+export function getConnectionMode(): 'supabase' | 'local' {
+  return isSupabaseConfigured ? 'supabase' : 'local'
 }

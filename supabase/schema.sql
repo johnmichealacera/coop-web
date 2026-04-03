@@ -1,4 +1,4 @@
--- SOEMCO Co-op MVP schema (MIGS assessments, patronage/DPR fields, operational modules)
+-- SOEMCO Co-op schema (MIGS assessments, patronage/DPR fields, operational modules)
 -- Run in Supabase SQL Editor or via supabase db push after linking.
 
 create extension if not exists "uuid-ossp";
@@ -68,7 +68,7 @@ alter table public.members enable row level security;
 alter table public.migs_assessments enable row level security;
 alter table public.patronage_allocations enable row level security;
 
--- MVP: open read/write for anon (replace with auth policies before production)
+-- Development: open read/write for anon (replace with auth policies before production)
 create policy "branches_all" on public.branches for all using (true) with check (true);
 create policy "members_all" on public.members for all using (true) with check (true);
 create policy "migs_all" on public.migs_assessments for all using (true) with check (true);
@@ -78,13 +78,13 @@ insert into public.branches (code, name)
 values (1, 'Main Office')
 on conflict (code) do nothing;
 
--- Optional demo rows after first deploy (uncomment if you want SQL seed)
+-- Optional seed rows after first deploy (uncomment if you want SQL seed)
 -- insert into public.members (branch_id, client_id, full_name, date_opened)
--- select b.id, '100001', 'Sample Member', '2020-01-15'::date
+-- select b.id, '100001', 'Rosa Dela Cruz', '2020-01-15'::date
 -- from public.branches b where b.code = 1 limit 1
 -- on conflict (branch_id, client_id) do nothing;
 
--- ========== Operational modules (MVP) ==========
+-- ========== Operational modules ==========
 -- Loans: application workflow (verify → approve → journalize)
 create table if not exists public.loan_applications (
   id uuid primary key default gen_random_uuid(),

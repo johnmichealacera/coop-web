@@ -45,6 +45,13 @@ export function MemberSelect({
     return <Skeleton className="h-9 w-full" />
   }
 
+  const labelForId = (id: string) => {
+    if (!id) return ''
+    const m = members.find((x) => x.id === id)
+    if (m) return `${m.full_name} (${m.client_id})`
+    return placeholder
+  }
+
   return (
     <Select
       value={value}
@@ -52,6 +59,7 @@ export function MemberSelect({
         if (v != null) onValueChange(v)
       }}
       disabled={disabled}
+      itemToStringLabel={labelForId}
     >
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
@@ -59,7 +67,7 @@ export function MemberSelect({
       <SelectContent>
         {members.map((m) => (
           <SelectItem key={m.id} value={m.id}>
-            {m.client_id} — {m.full_name}
+            {m.full_name} ({m.client_id})
           </SelectItem>
         ))}
       </SelectContent>

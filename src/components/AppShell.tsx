@@ -107,9 +107,9 @@ export function AppShell() {
         <Separator />
         <div className="p-3">
           <Badge variant={mode === 'supabase' ? 'default' : 'secondary'}>
-            {mode === 'supabase' ? 'Live database' : 'Local demo data'}
+            {mode === 'supabase' ? 'Live database' : 'Local data'}
           </Badge>
-          {mode === 'demo' && (
+          {mode === 'local' && (
             <p className="mt-2 text-xs text-muted-foreground">
               Set <code className="rounded bg-muted px-1">.env</code> with{' '}
               <code className="rounded bg-muted px-1">VITE_SUPABASE_*</code> to
@@ -125,7 +125,7 @@ export function AppShell() {
             <Leaf className="size-5 text-primary" />
             <span className="font-semibold">Island Co-op</span>
             <Badge variant="outline" className="ml-auto text-xs">
-              {mode === 'supabase' ? 'Live' : 'Demo'}
+              {mode === 'supabase' ? 'Live' : 'Local'}
             </Badge>
           </div>
           <nav className="flex gap-1 overflow-x-auto px-2 pb-2 text-xs">

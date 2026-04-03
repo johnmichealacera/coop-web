@@ -2,7 +2,7 @@
 -- and need loans, treasury, accounting, lookups, POS/inventory, and budget tables.
 -- Safe to re-run: tables use IF NOT EXISTS; policies use DROP IF EXISTS then CREATE.
 
--- ========== Operational modules (MVP) ==========
+-- ========== Operational modules ==========
 -- Loans: application workflow (verify → approve → journalize)
 create table if not exists public.loan_applications (
   id uuid primary key default gen_random_uuid(),

@@ -90,7 +90,7 @@ export function DashboardPage() {
               <CardTitle className="text-3xl tabular-nums">{total}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Records in the current data source (demo or Supabase).
+              Total members in the directory.
             </CardContent>
           </Card>
           <Card>

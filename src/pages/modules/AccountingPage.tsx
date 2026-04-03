@@ -251,7 +251,7 @@ export function AccountingPage() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Debit line fixed to 1010 (cash on hand) for this MVP.
+                    Debit line uses cash on hand (1010) by default.
                   </p>
                 </div>
                 <DialogFooter>
@@ -306,7 +306,7 @@ export function AccountingPage() {
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
             <div>
-              <CardTitle>Batch upload (simulated)</CardTitle>
+              <CardTitle>Batch receipt posting</CardTitle>
               <CardDescription>
                 Short file label (up to 8 characters), amount, and product
                 mapping to a two-line journal.
