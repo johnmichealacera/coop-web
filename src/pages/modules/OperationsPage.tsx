@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  createInventoryItem,
   createStockMovement,
   createSupplier,
   listInventoryItems,
@@ -44,7 +45,8 @@ export function OperationsPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [items, setItems] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [open, setOpen] = useState(false)
+  const [openMove, setOpenMove] = useState(false)
+  const [openItem, setOpenItem] = useState(false)
   const [openSupplier, setOpenSupplier] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [supCode, setSupCode] = useState('')
@@ -57,6 +59,11 @@ export function OperationsPage() {
   const [date, setDate] = useState(
     () => new Date().toISOString().slice(0, 10),
   )
+  const [invSku, setInvSku] = useState('')
+  const [invName, setInvName] = useState('')
+  const [invUnit, setInvUnit] = useState('pc')
+  const [invQty, setInvQty] = useState('0')
+  const [invReorder, setInvReorder] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -98,6 +105,30 @@ export function OperationsPage() {
     }
   }
 
+  async function onSaveItem() {
+    setErr(null)
+    try {
+      const created = await createInventoryItem({
+        sku: invSku,
+        name: invName,
+        unit: invUnit || undefined,
+        qty_on_hand: Number(invQty) || 0,
+        reorder_level:
+          invReorder.trim() === '' ? null : Number(invReorder) || 0,
+      })
+      setOpenItem(false)
+      setInvSku('')
+      setInvName('')
+      setInvUnit('pc')
+      setInvQty('0')
+      setInvReorder('')
+      setItemId(created.id)
+      await load()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not add item')
+    }
+  }
+
   async function onMove() {
     setErr(null)
     try {
@@ -108,7 +139,7 @@ export function OperationsPage() {
         reference: ref || undefined,
         trans_date: date,
       })
-      setOpen(false)
+      setOpenMove(false)
       await load()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed')
@@ -231,17 +262,90 @@ export function OperationsPage() {
                 Quantity on hand and reorder level by item.
               </CardDescription>
             </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger
-                render={
-                  <button
-                    type="button"
-                    className="inline-flex h-8 items-center justify-center rounded-lg border border-transparent bg-primary px-2.5 text-sm font-medium text-primary-foreground"
-                  >
-                    Record movement
-                  </button>
-                }
-              />
+            <div className="flex flex-wrap gap-2">
+              <Dialog open={openItem} onOpenChange={setOpenItem}>
+                <DialogTrigger
+                  render={<Button type="button" size="sm">Add item</Button>}
+                />
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add inventory item</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-3 py-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor="inv-sku">SKU</Label>
+                      <Input
+                        id="inv-sku"
+                        autoComplete="off"
+                        placeholder="e.g. SKU-RICE25"
+                        value={invSku}
+                        onChange={(e) => setInvSku(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="inv-name">Name</Label>
+                      <Input
+                        id="inv-name"
+                        placeholder="Item description"
+                        value={invName}
+                        onChange={(e) => setInvName(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="grid gap-2">
+                        <Label htmlFor="inv-unit">Unit</Label>
+                        <Input
+                          id="inv-unit"
+                          placeholder="pc, bag, kg…"
+                          value={invUnit}
+                          onChange={(e) => setInvUnit(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="inv-qty">Starting on hand</Label>
+                        <Input
+                          id="inv-qty"
+                          inputMode="decimal"
+                          value={invQty}
+                          onChange={(e) => setInvQty(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="inv-ro">Reorder level (optional)</Label>
+                      <Input
+                        id="inv-ro"
+                        inputMode="decimal"
+                        placeholder="Alert when below this qty"
+                        value={invReorder}
+                        onChange={(e) => setInvReorder(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setOpenItem(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={() => void onSaveItem()}>Save</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Dialog open={openMove} onOpenChange={setOpenMove}>
+                <DialogTrigger
+                  render={
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={items.length === 0}
+                    >
+                      Record movement
+                    </Button>
+                  }
+                />
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Record stock movement</DialogTitle>
@@ -252,14 +356,18 @@ export function OperationsPage() {
                     <Select
                       value={itemId}
                       onValueChange={(v) => setItemId(v ?? '')}
+                      itemToStringLabel={(id) => {
+                        const i = items.find((x) => x.id === id)
+                        return i ? `${i.name} (${i.sku})` : 'Select item'
+                      }}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select item" />
                       </SelectTrigger>
                       <SelectContent>
                         {items.map((i) => (
                           <SelectItem key={i.id} value={i.id}>
-                            {i.sku} — {i.name}
+                            {i.name} ({i.sku})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -313,17 +421,23 @@ export function OperationsPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpen(false)}>
+                  <Button variant="outline" onClick={() => setOpenMove(false)}>
                     Cancel
                   </Button>
                   <Button onClick={onMove}>Save</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No stock items yet. Use Add item to register SKUs you sell or
+                consume.
+              </p>
             ) : (
               <Table>
                 <TableHeader>

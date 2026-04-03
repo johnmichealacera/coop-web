@@ -54,7 +54,7 @@ let mockTreasury: TreasuryTransaction[] = [
   },
 ]
 
-let mockCoa: ChartOfAccountRow[] = [
+const mockCoa: ChartOfAccountRow[] = [
   {
     id: '00000000-0000-4000-8000-00000000f001',
     code: '1010',
@@ -609,6 +609,55 @@ export async function listInventoryItems(): Promise<InventoryItem[]> {
     return data as InventoryItem[]
   }
   return [...mockItems]
+}
+
+export async function createInventoryItem(input: {
+  sku: string
+  name: string
+  unit?: string
+  qty_on_hand?: number
+  reorder_level?: number | null
+}): Promise<InventoryItem> {
+  const sku = input.sku.trim()
+  const name = input.name.trim()
+  if (!sku || !name) {
+    throw new Error('SKU and item name are required.')
+  }
+  const qty = Math.max(0, Number(input.qty_on_hand) || 0)
+  const reorder =
+    input.reorder_level === undefined || input.reorder_level === null
+      ? null
+      : Math.max(0, Number(input.reorder_level))
+  const row: InventoryItem = {
+    id: crypto.randomUUID(),
+    sku,
+    name,
+    unit: input.unit?.trim() || 'pc',
+    qty_on_hand: qty,
+    reorder_level: reorder,
+  }
+
+  if (supabase && isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .insert({
+        sku: row.sku,
+        name: row.name,
+        unit: row.unit,
+        qty_on_hand: row.qty_on_hand,
+        reorder_level: row.reorder_level ?? 0,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data as InventoryItem
+  }
+
+  if (mockItems.some((i) => i.sku.toLowerCase() === sku.toLowerCase())) {
+    throw new Error('An item with this SKU already exists.')
+  }
+  mockItems = [...mockItems, row]
+  return row
 }
 
 export async function createStockMovement(input: {
